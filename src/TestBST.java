@@ -6,6 +6,9 @@
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -22,6 +25,39 @@ public class TestBST {
             testBST.put(random, random);
             Assert.assertTrue(testBST.isValidBST());
         }
+    }
+
+    @Test
+    public void testMinMax() {
+        List<Integer> testList;
+        BSTTestCase<Integer, Integer> testBST;
+        for (int i = 0; i < 1000; i++) {
+            testList = genIntList(1000, 1000);
+            testBST = new BSTTestCase<>();
+            for (int x : testList) {
+                testBST.put(x, x);
+            }
+            Collections.sort(testList);
+            Integer expectedMin = testList.get(0);
+            Integer expectedMax = testList.get(testList.size() - 1);
+            Assert.assertEquals(expectedMax, testBST.max());
+            Assert.assertEquals(expectedMin, testBST.min());
+        }
+    }
+
+    /**
+     * Generates a random List of Integers
+     * @param count the desired number of Integer objects in the list
+     * @param bound the maximum value for the integer added to the list
+     * @return an ArrayList containing count Integers with a max value of bound
+     */
+    private List<Integer> genIntList(int count, int bound) {
+        List<Integer> userList = new ArrayList<Integer>();
+        Random gen = new Random();
+        for (int i = 0; i < count; i++) {
+            userList.add(gen.nextInt(bound));
+        }
+        return userList;
     }
 
     /**

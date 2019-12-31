@@ -47,6 +47,34 @@ public class BST<T, K extends Comparable> {
     }
 
     /**
+     * Gets the minimum element in the tree
+     * @complexity O(n)
+     * @return the object associated with the least key in the tree
+     */
+    public T min() {
+        if (root == null) throw new IllegalStateException("Empty tree.");
+        Node next = root;
+        while (next.getLeftChild() != NODE_DNE) {
+            next = next.getLeftChild();
+        }
+        return next.getValue();
+    }
+
+    /**
+     * Gets the maximum element in the tree
+     * @complexity O(n)
+     * @return the object associated with the greatest key in the tree
+     */
+    public T max() {
+        if (root == null) throw new IllegalStateException("Empty tree.");
+        Node next = root;
+        while (next.getRightChild() != NODE_DNE) {
+            next = next.getRightChild();
+        }
+        return next.getValue();
+    }
+
+    /**
      * Inserts an object into the BST by finding it's place with binary search
      * and creating a new node for the object.
      * @complexity O(n)
