@@ -6,10 +6,7 @@
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * A set of tests covering the basic functions of the BST class.
@@ -24,6 +21,36 @@ public class TestBST {
             Integer random = gen.nextInt();
             testBST.put(random, random);
             Assert.assertTrue(testBST.isValidBST());
+        }
+    }
+
+    @Test
+    public void testGet() {
+        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        List<Integer> elements = genIntList(1000, 1000);
+        for (int i = 0; i < elements.size(); i++) {
+            testBST.put(elements.get(i), elements.get(i));
+        }
+        for (int x : elements) {
+            Assert.assertTrue(testBST.get(x) != null);
+            Assert.assertEquals(testBST.get(x), x);
+            Assert.assertTrue(testBST.isValidBST());
+        }
+    }
+
+    @Test
+    public void testPredecessor() {
+        List<Integer> testList = genIntList(10000, 10000);
+        System.out.println(testList);
+        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        for (int x : testList) {
+            testBST.put(x, x);
+        }
+        Collections.sort(testList);
+        for (int i = 0; i < testList.size() - 1; i++) {
+            Integer pred = testList.get(i);
+            Integer curr = testList.get(i+1);
+            if (pred.compareTo(curr) != 0) Assert.assertEquals(pred, testBST.predecessor(curr));
         }
     }
 
