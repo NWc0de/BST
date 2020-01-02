@@ -42,6 +42,16 @@ public class BST<T, K extends Comparable> {
     }
 
     /**
+     * Removes the node associated with the specified key. If there are multiple nodes
+     * associated with that key, nodes are removed in the order they were inserted.
+     * @param key the key associated with node to be removed
+     */
+    public T remove(K key) {
+        Node rmv = delete(key);
+        return rmv == NODE_DNE ? null : rmv.getValue();
+    }
+
+    /**
      * Gets the value associated with the Node containing the minimum key
      * @complexity O(n)
      * @return the object associated with the least key in the tree
@@ -69,8 +79,11 @@ public class BST<T, K extends Comparable> {
         return next.getValue();
     }
 
+    public boolean isEmpty() { return root == NODE_DNE; }
+    public boolean contains(K key) { return search(key) != null; }
+
     /**
-     * Gets the object associated with the next least key (in relation to the parameter).
+     * Gets the object associated with the next least (and not equal to) key (in relation to the parameter).
      * Minimum node has no predecessor.
      * @param key the key to compare against
      * @return the object associated with next least key, if it exists, if not null
@@ -121,6 +134,116 @@ public class BST<T, K extends Comparable> {
     }
 
     /**
+     * Deletes the first node in the subtree with key equal to the key parameter.
+     * @param key the key associated with the object to be deleted
+     */
+    private Node delete(K key) {
+        Node curr = search(key);
+        if (curr == NODE_DNE) return curr;
+        if (curr.isLeaf()) {
+            deleteLeaf(curr); // don't think I need to curr = null here, since will go out of scope then be GCed
+        } else if (curr.childCount() == 1) {
+            deleteNodeOC(curr);
+        } else {
+            deleteNodeTC(curr);
+        }
+        return curr;
+    }
+
+    /**
+     * Deletes a leaf node by removing n's parent's reference to n
+     * Assumes n is a leaf
+     * @param n the node to delete
+     */
+    private void deleteLeaf(Node n) {
+        if (!n.isLeaf()) throw new IllegalArgumentException("Node is not leaf.");
+        if (n.getParentNode().getRightChild() == n) {
+            n.getParentNode().setRightChild(NODE_DNE);
+        } else {
+            n.getParentNode().setLeftChild(NODE_DNE);
+        }
+    }
+
+    /**
+     * Splices n out by replacing n with it's one child node.
+     * Assumes n has only one child
+     * @param n the node to delete
+     */
+    private void deleteNodeOC(Node n) {
+        if (n.childCount() != 1) throw new IllegalArgumentException("Node does not have one child.");
+        Node child = n.getRightChild() == NODE_DNE ? n.getLeftChild() : n.getRightChild();
+        if (n == root) {
+            root = child;
+            child.setParentNode(NODE_DNE);
+        } else if (n.isRightChild()) {
+            n.getParentNode().setRightChild(child);
+            child.setParentNode(n.getParentNode());
+        } else {
+            n.getParentNode().setLeftChild(child);
+            child.setParentNode(n.getParentNode());
+        }
+        decUpTree(child);
+    }
+
+    /**
+     * Deletes a node with two children by replacing n with it's leq predecessor
+     * (must be less than or equal predecessor, not true predecessor)
+     * Assumes n has two children
+     * @param n the object to be deleted
+     */
+    private void deleteNodeTC(Node n) {
+        if (n.childCount() != 2) throw new IllegalArgumentException("Node does not have two children.");
+        Node pred = nextLeqNode(n.getKey());
+        splice(pred);
+        pred.setNodeCount(n.getNodeCount() - 1);
+        if (n == root) {
+            root = pred;
+            pred.setParentNode(NODE_DNE);
+        } else if (n.isRightChild()) {
+            n.getParentNode().setRightChild(pred);
+            pred.setParentNode(n.getParentNode());
+        } else {
+            n.getParentNode().setLeftChild(pred);
+            pred.setParentNode(n.getParentNode());
+        }
+        n.getLeftChild().setParentNode(pred);
+        n.getRightChild().setParentNode(pred);
+        pred.setRightChild(n.getRightChild());
+        pred.setLeftChild(n.getLeftChild());
+        decUpTree(pred);
+    }
+
+    /**
+     * Decrements the node count of every node on the path from n to the root.
+     * @param n the root of the subtree
+     */
+    private void decUpTree(Node n) {
+        Node next = n;
+        while (next != root) {
+            next = next.getParentNode();
+            next.decrementNodeCount(1);
+        }
+    }
+
+    /**
+     * Splices a node by joining it's parent and child.
+     * Assumes node only has one child (left).
+     * @param n the node to splice
+     */
+    private void splice(Node n) {
+        if (n.getParentNode().getRightChild() == n && !n.isLeaf()) {
+            n.getParentNode().setRightChild(n.getLeftChild());
+            n.getLeftChild().setParentNode(n.getParentNode());
+        } else if (!n.isLeaf()) {
+            n.getParentNode().setLeftChild(n.getLeftChild());
+            n.getLeftChild().setParentNode(n.getParentNode());
+        } else {
+            if (n.getParentNode().getRightChild() == n) n.getParentNode().setRightChild(NODE_DNE);
+            else n.getParentNode().setLeftChild(NODE_DNE);
+        }
+    }
+
+    /**
      * Returns the node with the next smallest key
      * @param key the key to compare against
      * @return the node with the next smallest key, or NODE_DNE if the node at key is min
@@ -132,9 +255,40 @@ public class BST<T, K extends Comparable> {
         if (leftSubTreeEmpty(curr)) {
             nextLeast = firstParentRL(curr);
         } else {
-            nextLeast = localNeqMax(curr.getLeftChild(), curr); //TODO: what if next least is equal to key?
+            nextLeast = localNeqMax(curr.getLeftChild(), curr);
         }
         return nextLeast;
+    }
+
+    /**
+     * Returns the node with the next least (or equal to) key
+     * @param key the key to compare against
+     * @return the node with the next least (or equal to) key
+     */
+    private Node nextLeqNode(K key) {
+        Node curr = search(key);
+        Node nextLeast;
+        if (curr == NODE_DNE) throw new IllegalArgumentException("No node associated with key.");
+        if (curr.getLeftChild() == NODE_DNE) {
+            nextLeast = firstParentRL(curr);
+        } else {
+            nextLeast = localMax(curr.getLeftChild());
+        }
+        return nextLeast;
+    }
+
+    /**
+     * Returns the maximum element in the subtree rooted at n.
+     * @param n the root of the subtree to examine
+     * @return the maxmimum element in the subtree rooted at n
+     */
+    private Node localMax(Node n) {
+        if (n == NODE_DNE) throw new IllegalArgumentException("Tree is empty.");
+        Node next = n;
+        while (next.getRightChild() != NODE_DNE) {
+            next = next.getRightChild();
+        }
+        return next;
     }
 
     /**
@@ -193,7 +347,7 @@ public class BST<T, K extends Comparable> {
 
     /**
      * Returns the first parent node of n (or n itself) with a key that is not equal to eq.
-     * Assumes there is a parent with a key not equal to n.
+     * Assumes there is a parent node of n (or n itself) with a key not equal to n.
      * @param n the node to begin with
      * @param eq the node to compare keys against
      * @return the first parent node of n with a key that is not equal to eq
@@ -261,6 +415,7 @@ public class BST<T, K extends Comparable> {
         public T getValue() {return value;}
         public K getKey() {return key;}
         public int getNodeCount() {return nodeCount;}
+        public void setNodeCount(int n) {nodeCount = n;}
 
         public void incrementNodeCount(int n) {nodeCount += n;}
         public void decrementNodeCount(int n) {nodeCount -= n;}
@@ -268,5 +423,13 @@ public class BST<T, K extends Comparable> {
         public boolean isLeaf() {
             return rightChild == NODE_DNE && leftChild == NODE_DNE;
         }
+        public boolean isRightChild() { return parentNode.rightChild == this; }
+        public boolean isLeftChild() { return parentNode.leftChild == this; }
+        public int childCount() {
+            if (rightChild != NODE_DNE && leftChild != NODE_DNE) return 2;
+            else if (rightChild != NODE_DNE || leftChild != NODE_DNE) return 1;
+            else return 0;
+        }
+
     }
 }

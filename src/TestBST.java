@@ -39,14 +39,28 @@ public class TestBST {
     }
 
     @Test
+    public void testRemove() {
+        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        List<Integer> elements = genIntList(1000, 1000);
+        for (int i = 0; i < elements.size(); i++) {
+            testBST.put(elements.get(i), elements.get(i));
+        }
+        for (int x : elements) {
+            Integer rmvd = (Integer) testBST.remove(x);
+            Assert.assertEquals(rmvd, Integer.valueOf(x));
+            Assert.assertTrue(testBST.isValidBST());
+        }
+    }
+
+    @Test
     public void testPredecessor() {
         List<Integer> testList = genIntList(10000, 10000);
-        System.out.println(testList);
         BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
         for (int x : testList) {
             testBST.put(x, x);
         }
         Collections.sort(testList);
+        Assert.assertEquals(testBST.predecessor(testList.get(0)), null); // min should have no predecessor
         for (int i = 0; i < testList.size() - 1; i++) {
             Integer pred = testList.get(i);
             Integer curr = testList.get(i+1);
