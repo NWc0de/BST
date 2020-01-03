@@ -53,6 +53,19 @@ public class TestBST {
     }
 
     @Test
+    public void testSelect() {
+        List<Integer> testList = genUniqueList(10000, 10000);
+        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        for (int x : testList) {
+            testBST.put(x, x);
+        }
+        Collections.sort(testList);
+        for (int i = 1; i <= testList.size(); i++) {
+            Assert.assertEquals(testList.get(i-1), testBST.select(i));
+        }
+    }
+
+    @Test
     public void testPredecessor() {
         List<Integer> testList = genIntList(10000, 10000);
         BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
@@ -89,7 +102,7 @@ public class TestBST {
     /**
      * Generates a random List of Integers
      * @param count the desired number of Integer objects in the list
-     * @param bound the maximum value for the integer added to the list
+     * @param bound the maximum value for the Integers added to the list
      * @return an ArrayList containing count Integers with a max value of bound
      */
     private List<Integer> genIntList(int count, int bound) {
@@ -97,6 +110,24 @@ public class TestBST {
         Random gen = new Random();
         for (int i = 0; i < count; i++) {
             userList.add(gen.nextInt(bound));
+        }
+        return userList;
+    }
+
+    /**
+     * Genereates a random array of unique Integers (no duplicate values)
+     * @param count the number of Integers to generate
+     * @param bound the maximum value for the Integers added to the list
+     * @return an ArrayList containing count Integers with a max value of bound
+     */
+    private List<Integer> genUniqueList(int count, int bound) {
+        if (count > bound) throw new IllegalArgumentException("Not enough unique values to fill the array (bound too low).");
+        List<Integer> userList = new ArrayList<>();
+        Random gen = new Random();
+        while (userList.size() != count) {
+            Integer x = gen.nextInt(bound);
+            while (userList.contains(x)) x = gen.nextInt(bound);
+            userList.add(x);
         }
         return userList;
     }
@@ -115,6 +146,7 @@ public class TestBST {
         public boolean isValidBST() {
             return isValidBST(root);
         }
+
 
         /**
          * Checks if the tree violates the BST property: every node is

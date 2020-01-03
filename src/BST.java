@@ -10,7 +10,6 @@
  */
 public class BST<T, K extends Comparable> {
 
-    private int nodeCount;
     protected final Node NODE_DNE = new Node(null, null, null);
     protected Node root = NODE_DNE;
 
@@ -21,7 +20,7 @@ public class BST<T, K extends Comparable> {
      * @complexity O(n)
      */
     public void put(T object, K key) {
-        if (nodeCount++ == 0) {
+        if (root == NODE_DNE) {
             root = new Node(NODE_DNE, object, key);
         } else {
             insert(object, key);
@@ -79,6 +78,18 @@ public class BST<T, K extends Comparable> {
         return next.getValue();
     }
 
+    /**
+     * Returns the object associated with the nth smallest key.
+     * @param n the rank of the desired element (least-greatest, not 1-sizeOfArray)
+     * @return the element with the nth smallest key will be returned
+     */
+    public T select(int n) {
+        if (n==0 || n > root.getNodeCount()) throw new IllegalArgumentException("Rank cannot be 0 or greater than the size of the BST.");
+        Node rankN = select(n-1, root);
+        return rankN.getValue();
+    }
+
+    public int size() { return root.getNodeCount(); }
     public boolean isEmpty() { return root == NODE_DNE; }
     public boolean contains(K key) { return search(key) != null; }
 
@@ -108,6 +119,20 @@ public class BST<T, K extends Comparable> {
             kCmp = cmp(next.getKey(), key);
         }
         return next;
+    }
+
+    /**
+     * Recursively traverses the tree searching for the nth smallest key.
+     * @param n the order of key to search for
+     * @param next the Node to process (initially root)
+     * @return the Node associated with the nth smallest key
+     */
+    private Node select(int n, Node next) {
+        if (next.isLeaf()) return next;
+        int lSize = next.getLeftChild().getNodeCount();
+        if (n < lSize) return select(n, next.getLeftChild());
+        else if (n > lSize) return select(n - lSize - 1, next.getRightChild());
+        else return next;
     }
 
     /**
@@ -141,7 +166,7 @@ public class BST<T, K extends Comparable> {
         Node curr = search(key);
         if (curr == NODE_DNE) return curr;
         if (curr.isLeaf()) {
-            deleteLeaf(curr); // don't think I need to curr = null here, since will go out of scope then be GCed
+            deleteLeaf(curr); // don't think I need to curr = null here, since will go out of scope then be GCed ?
         } else if (curr.childCount() == 1) {
             deleteNodeOC(curr);
         } else {
@@ -187,7 +212,7 @@ public class BST<T, K extends Comparable> {
 
     /**
      * Deletes a node with two children by replacing n with it's leq predecessor
-     * (must be less than or equal predecessor, not true predecessor)
+     * (less than or equal predecessor, not true predecessor)
      * Assumes n has two children
      * @param n the object to be deleted
      */
@@ -218,35 +243,34 @@ public class BST<T, K extends Comparable> {
      * @param n the root of the subtree
      */
     private void decUpTree(Node n) {
-        Node next = n;
-        while (next != root) {
-            next = next.getParentNode();
-            next.decrementNodeCount(1);
-        }
+        if (n == root) return;
+        n.decrementNodeCount(1);
+        decUpTree(n.getParentNode());
     }
 
     /**
-     * Splices a node by joining it's parent and child.
+     * Removes a node by joining it's parent and child.
      * Assumes node only has one child (left).
      * @param n the node to splice
      */
     private void splice(Node n) {
-        if (n.getParentNode().getRightChild() == n && !n.isLeaf()) {
+        if (n.isRightChild() && !n.isLeaf()) {
             n.getParentNode().setRightChild(n.getLeftChild());
             n.getLeftChild().setParentNode(n.getParentNode());
-        } else if (!n.isLeaf()) {
+        } else if (n.isLeftChild() && !n.isLeaf()) {
             n.getParentNode().setLeftChild(n.getLeftChild());
             n.getLeftChild().setParentNode(n.getParentNode());
+        } else if (n.isRightChild()) {
+            n.getParentNode().setRightChild(NODE_DNE);
         } else {
-            if (n.getParentNode().getRightChild() == n) n.getParentNode().setRightChild(NODE_DNE);
-            else n.getParentNode().setLeftChild(NODE_DNE);
+            n.getParentNode().setLeftChild(NODE_DNE);
         }
     }
 
     /**
-     * Returns the node with the next smallest key
+     * Returns the node with the next smallest (not equal to) key
      * @param key the key to compare against
-     * @return the node with the next smallest key, or NODE_DNE if the node at key is min
+     * @return the node with the next smallest (not equal to) key, or NODE_DNE if the node at key is min
      */
     private Node nextLeastNode(K key) {
         Node curr = search(key);
@@ -401,7 +425,7 @@ public class BST<T, K extends Comparable> {
             this.parentNode = parentNode;
             this.value = value;
             this.key = key;
-            nodeCount = 1;
+            nodeCount = parentNode == null ? 0 : 1; // NODE_DNE has nodeCount 0
         }
 
         public Node getParentNode() {return parentNode;}
