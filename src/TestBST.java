@@ -133,10 +133,14 @@ public class TestBST {
     }
 
     /**
-     * A special class that adds a single method to the
-     * BST class to check if the BST invariant is satisfied.
+     * A special case of the BST class that includes methods to determine
+     * whether the current instance upholds the BST property (every element
+     * in the left subtree is leq n, every element in the right subtree is
+     * greater).
      */
-    private final class BSTTestCase<T, K extends Comparable> extends BST {
+    private static final class BSTTestCase<T, K extends Comparable> extends BST {
+
+        private enum ORIENT {LEFT, RIGHT};
 
         /**
          * Recursively checks the BST property for every subtree (node) of the
@@ -162,21 +166,21 @@ public class TestBST {
             Node l = n.getLeftChild();
             Node r = n.getRightChild();
 
-            if (l != NODE_DNE) isValid = isValid && isValidSubTree(n, l, true);
-            if (r != NODE_DNE) isValid = isValid && isValidSubTree(n, r, false);
+            if (l != NODE_DNE) isValid = isValid && isValidSubTree(n, l, ORIENT.LEFT);
+            if (r != NODE_DNE) isValid = isValid && isValidSubTree(n, r, ORIENT.RIGHT);
 
             return isValid && isValidBST(l) && isValidBST(r);
         }
 
         /**
          * Recursively compares every element in one of n's subtree with n, assuring that the
-         * heap property is preserved at node n (not throughout the entire tree).
+         * BST property is preserved at node n (not throughout the entire tree).
          * @complexity O(n)
          * @param n all elements in n's left subtree will be compared to n
          * @param c the current child node under consideration
          * @return a boolean indicating if the subtree preserves the heap property
          */
-        private boolean isValidSubTree(Node n, Node c, boolean left) {
+        private boolean isValidSubTree(Node n, Node c, ORIENT dir) {
             //TODO: Is there a more efficient operation to check the BST property?
             //TODO: What is the time complexity for a balanced BST
             boolean validST = true;
@@ -184,26 +188,26 @@ public class TestBST {
             Node r = c.getRightChild();
             if (l != NODE_DNE) {
                 validST = validST
-                        && cmp(n, l, left)
-                        && isValidSubTree(n, l, left);
+                        && validChild(n, l, dir)
+                        && isValidSubTree(n, l, dir);
             }
             if (r != NODE_DNE) {
                 validST = validST
-                        && cmp(n, r, left)
-                        && isValidSubTree(n, r, left);
+                        && validChild(n, r, dir)
+                        && isValidSubTree(n, r, dir);
             }
-            return validST && cmp(n, c, left);
+            return validST && validChild(n, c, dir);
         }
 
         /**
-         * Compares to nodes with respect the right or left subtree property.
-         * @param n the first node
-         * @param m the second node
-         * @param left if true return indicates whether n >= m, if not return indicates whether n < m
+         * Compares two nodes with respect the right or left subtree property.
+         * @param n the parent node
+         * @param c the child node
+         * @param dir the orientation, left returns n >= m, right returns n < m
          * @return if left is true return indicates whether n >= m, if not return indicates whether n < m
          */
-        private boolean cmp(Node n, Node m, boolean left) {
-            return left ? n.getKey().compareTo(m.getKey()) >= 0 : n.getKey().compareTo(m.getKey()) < 0;
+        private boolean validChild(Node n, Node c, ORIENT dir) {
+            return dir == ORIENT.LEFT ? n.getKey().compareTo(c.getKey()) >= 0 : n.getKey().compareTo(c.getKey()) < 0;
         }
     }
 
