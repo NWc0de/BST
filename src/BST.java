@@ -2,6 +2,8 @@
  * The main class declaration for the binary search tree data type.
  */
 
+import java.util.Stack;
+
 /**
  * An implementation of a basic (unbalanced) binary search tree.
  * @param <T> the type of the object to be inserted
@@ -30,13 +32,15 @@ class BST<T, K extends Comparable> {
     }
 
     /**
-     * Gets the object associated with the specified key w/ binary search. O(n)
+     * Gets the object associated with the specified key w/ binary search. If there
+     * are multiple nodes associated with that key the object associated with the first
+     * key value pair that was inserted is returned. O(n)
      * @param key the key associated with the desired object
      * @return the object in this BST associated with the provided key
      */
     public T get(K key) {
         Node data = search(key, false);
-        return data == NODE_DNE ? null : data.getValue();
+        return data.valCount() > 0 ? data.getValue() : null; // return null if node DNE
     }
 
     /**
@@ -46,11 +50,13 @@ class BST<T, K extends Comparable> {
      */
     public T remove(K key) {
         Node rmv = delete(key);
-        return rmv == NODE_DNE ? null : rmv.getValue();
+        return rmv.valCount() > 0 ? rmv.popVal() : null;
     }
 
     /**
-     * Gets the value associated with the Node containing the minimum key. O(n)
+     * Gets the value associated with the Node containing the minimum key. If there
+     * are multiple nodes associated with that key the object associated with the first
+     * key value pair that was inserted is returned. O(n)
      * @return the object associated with the least key in the tree
      */
     public T min() {
@@ -63,7 +69,9 @@ class BST<T, K extends Comparable> {
     }
 
     /**
-     * Gets the value associated with the Node containing the maximum key. O(n)
+     * Gets the value associated with the Node containing the maximum key. If there
+     * are multiple nodes associated with that key the object associated with the first
+     * key value pair that was inserted is returned. O(n)
      * @return the object associated with the greatest key in the tree
      */
     public T max() {
@@ -76,8 +84,10 @@ class BST<T, K extends Comparable> {
     }
 
     /**
-     * Returns the object associated with the nth smallest key. O(n)
-     * @param n the rank of the desired element (least-greatest, not 1-sizeOfArray)
+     * Returns the object associated with the nth smallest key. If there
+     * are multiple nodes associated with that key the object associated with the first
+     * key value pair that was inserted is returned. O(n)
+     * @param n the rank of the desired element (least - greatest)
      * @return the element with the nth smallest key will be returned
      */
     public T select(int n) {
@@ -91,8 +101,9 @@ class BST<T, K extends Comparable> {
     public boolean contains(K key) { return search(key, false) != null; }
 
     /**
-     * Gets the object associated with the next least (and not equal to) key (in relation to the parameter).
-     * Minimum node has no predecessor. O(n)
+     * Gets the object associated with the next least key (in relation to the parameter).
+     * If there are multiple nodes associated with that key the object associated with the first
+     * key value pair that was inserted is returned. O(n)
      * @param key the key to compare against
      * @return the object associated with next least key, if it exists, if not null
      */
@@ -103,24 +114,27 @@ class BST<T, K extends Comparable> {
 
     /**
      * Inserts an object by finding it's place via binary search and creating
-     * a new node. O(n)
+     * a new node. If a node already exists with the given key, the value is
+     * appended to that node's list of objects. O(n)
      * @param object the object to insert
      * @param key the key associated with object to be inserted
      */
     protected void insert(T object, K key) {
-        Node next = root;
-        Node last = root;
-        int kCmp = cmp(root.getKey(), key);
-        while(next != NODE_DNE) {
+        Node last, next = root;
+        int kCmp;
+        do {
             kCmp = cmp(next.getKey(), key);
             next.incrementNodeCount(1);
             last = next;
             next = kCmp < 0 ? next.getRightChild() : next.getLeftChild();
-        }
+        } while (kCmp != 0 && next != NODE_DNE);
 
-        Node insert = new Node(last, object, key);
-        if (kCmp < 0) last.setRightChild(insert);
-        else last.setLeftChild(insert);
+        if (kCmp == 0)
+            last.pushValue(object);
+        else if (kCmp < 0)
+            last.setRightChild(new Node(last, object, key));
+        else
+            last.setLeftChild(new Node(last, object, key));
     }
 
     /**
@@ -174,7 +188,8 @@ class BST<T, K extends Comparable> {
      */
     private Node delete(K key) {
         Node curr = search(key, true); // decrement while traversing during search
-        if (curr == NODE_DNE) return curr;
+        if (curr.valCount() > 1 || curr == NODE_DNE) return curr;
+
         if (curr.isLeaf()) {
             deleteLeaf(curr);
         } else if (curr.childCount() == 1) {
@@ -374,14 +389,14 @@ class BST<T, K extends Comparable> {
         private Node parentNode;
         private Node leftChild = NODE_DNE;
         private Node rightChild = NODE_DNE;
-        private T value;
-        private K key;
+        private Stack<T> values = new Stack<>(); // maintain a list of objects corresponding to duplicate keys
+        private final K key;
         private Color nodeColor = Color.BLACK;
         private int nodeCount; // size of subtree rooted at this node
 
         Node(Node parentNode, T value, K key) {
             this.parentNode = parentNode;
-            this.value = value;
+            this.values.push(value);
             this.key = key;
             nodeCount = parentNode == null ? 0 : 1; // NODE_DNE has nodeCount 0
         }
@@ -390,8 +405,8 @@ class BST<T, K extends Comparable> {
          * Provide optional constructor for colored nodes in the
          * case of red-black implementation.
          */
-        Node(Node parentNode, T value, K key, Color nodeColor) {
-            this(parentNode, value, key);
+        Node(Node parentNode, T values, K key, Color nodeColor) {
+            this(parentNode, values, key);
             this.nodeColor = nodeColor;
         }
 
@@ -404,7 +419,10 @@ class BST<T, K extends Comparable> {
         void setLeftChild(Node l) { leftChild = l; }
         void setRightChild(Node r) { rightChild = r; }
 
-        T getValue() { return value; }
+        int valCount() { return values.size(); }
+        T getValue() { return values.peek(); }
+        T popVal()     { return values.pop(); }
+        void pushValue(T val) { values.push(val); }
         K getKey() { return key; }
         Color getColor() { return nodeColor; }
         void setColor(Color nodeColor) { this.nodeColor = nodeColor; }
