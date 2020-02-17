@@ -1,17 +1,20 @@
 /*
  * The main class declaration for the binary search tree data type.
- * Author: Spencer Little
  */
 
 /**
  * An implementation of a basic (unbalanced) binary search tree.
- * Generic types: T the object corresponding to key K, which must be Comparable
- * @author Spencer Little
+ * @param <T> the type of the object to be inserted
+ * @param <K> the type of the keys associated with the objects
  */
-public class BST<T, K extends Comparable> {
+class BST<T, K extends Comparable> {
 
-    protected final Node NODE_DNE = new Node(null, null, null);
-    protected Node root = NODE_DNE;
+    /** Color constants to denote red vs black nodes in the case of a red black BST. */
+    public enum Color {RED, BLACK}
+    /** A default NIL node to simplify processing of leaf nodes. */
+    final Node NODE_DNE = new Node(null, null, null);
+    /** Root is initially NODE_DNE, which defaults to Color.BLACK preserving the red black invariant. */
+    Node root = NODE_DNE;
 
     /**
      * Inserts a object/key pair into the BST. O(n)
@@ -99,6 +102,39 @@ public class BST<T, K extends Comparable> {
     }
 
     /**
+     * Inserts an object by finding it's place via binary search and creating
+     * a new node. O(n)
+     * @param object the object to insert
+     * @param key the key associated with object to be inserted
+     */
+    protected void insert(T object, K key) {
+        Node next = root;
+        Node last = root;
+        int kCmp = cmp(root.getKey(), key);
+        while(next != NODE_DNE) {
+            kCmp = cmp(next.getKey(), key);
+            next.incrementNodeCount(1);
+            last = next;
+            next = kCmp < 0 ? next.getRightChild() : next.getLeftChild();
+        }
+
+        Node insert = new Node(last, object, key);
+        if (kCmp < 0) last.setRightChild(insert);
+        else last.setLeftChild(insert);
+    }
+
+    /**
+     * Compares to K key values by calling compareTo
+     * @param key1 the first key to be compared
+     * @param key2 the second key to be compared
+     * @return 0 if key1 == key2, a negative int if key1 < key2, a positive int if key1 > key2
+     */
+    @SuppressWarnings("unchecked")
+    protected int cmp(K key1, K key2) {
+        return key1.compareTo(key2);
+    }
+
+    /**
      * Searches for the node corresponding to the given key (binary search). If multiple
      * such key-value pairs exist, the value associated with the first key-value pair
      * inserted will be returned. O(n)
@@ -129,28 +165,6 @@ public class BST<T, K extends Comparable> {
         if (n < lSize) return select(n, next.getLeftChild());
         else if (n > lSize) return select(n - lSize - 1, next.getRightChild());
         else return next;
-    }
-
-    /**
-     * Inserts an object by finding it's place via binary search and creating
-     * a new node. O(n)
-     * @param object the object to insert
-     * @param key the key associated with object to be inserted
-     */
-    private void insert(T object, K key) {
-        Node next = root;
-        Node last = root;
-        int kCmp = cmp(root.getKey(), key);
-        while(next != NODE_DNE) {
-            kCmp = cmp(next.getKey(), key);
-            next.incrementNodeCount(1);
-            last = next;
-            next = kCmp < 0 ? next.getRightChild() : next.getLeftChild();
-        }
-
-        Node insert = new Node(last, object, key);
-        if (kCmp < 0) last.setRightChild(insert);
-        else last.setLeftChild(insert);
     }
 
     /**
@@ -351,61 +365,59 @@ public class BST<T, K extends Comparable> {
         return next;
     }
 
-    /**
-     * Compares to K key values by calling compareTo
-     * @param key1 the first key to be compared
-     * @param key2 the second key to be compared
-     * @return 0 if key1 == key2, a negative int if key1 < key2, a positive int if key1 > key2
-     */
-    @SuppressWarnings("unchecked")
-    private int cmp(K key1, K key2) {
-        return key1.compareTo(key2);
-    }
-
     private boolean nodeEq(Node n, Node m) {
         return cmp(n.getKey(), m.getKey()) == 0;
     }
 
-
-
-    protected class Node {
+    class Node {
 
         private Node parentNode;
         private Node leftChild = NODE_DNE;
         private Node rightChild = NODE_DNE;
         private T value;
         private K key;
+        private Color nodeColor = Color.BLACK;
         private int nodeCount; // size of subtree rooted at this node
 
-        public Node(Node parentNode, T value, K key) {
+        Node(Node parentNode, T value, K key) {
             this.parentNode = parentNode;
             this.value = value;
             this.key = key;
             nodeCount = parentNode == null ? 0 : 1; // NODE_DNE has nodeCount 0
         }
 
-        public Node getParentNode() {return parentNode;}
-        public Node getLeftChild() {return leftChild;}
-        public Node getRightChild() {return rightChild;}
-
-        public void setParentNode(Node p) {parentNode = p;}
-        public void setLeftChild(Node l) {leftChild = l;}
-        public void setRightChild(Node r) {rightChild = r;}
-
-        public T getValue() {return value;}
-        public K getKey() {return key;}
-        public int getNodeCount() {return nodeCount;}
-        public void setNodeCount(int n) {nodeCount = n;}
-
-        public void incrementNodeCount(int n) {nodeCount += n;}
-        public void decrementNodeCount(int n) {nodeCount -= n;}
-
-        public boolean isLeaf() {
-            return rightChild == NODE_DNE && leftChild == NODE_DNE;
+        /**
+         * Provide optional constructor for colored nodes in the
+         * case of red-black implementation.
+         */
+        Node(Node parentNode, T value, K key, Color nodeColor) {
+            this(parentNode, value, key);
+            this.nodeColor = nodeColor;
         }
-        public boolean isRightChild() { return parentNode.rightChild == this; }
-        public boolean isLeftChild() { return parentNode.leftChild == this; }
-        public int childCount() {
+
+        Node getParentNode() { return parentNode; }
+        Node getGrandParent() { return parentNode.getParentNode(); }
+        Node getLeftChild() { return leftChild; }
+        Node getRightChild() { return rightChild; }
+
+        void setParentNode(Node p) { parentNode = p; }
+        void setLeftChild(Node l) { leftChild = l; }
+        void setRightChild(Node r) { rightChild = r; }
+
+        T getValue() { return value; }
+        K getKey() { return key; }
+        Color getColor() { return nodeColor; }
+        void setColor(Color nodeColor) { this.nodeColor = nodeColor; }
+        int getNodeCount() { return nodeCount; }
+        void setNodeCount(int n) { nodeCount = n; }
+
+        void incrementNodeCount(int n) { nodeCount += n; }
+        void decrementNodeCount(int n) { nodeCount -= n; }
+
+        boolean isLeaf() { return rightChild == NODE_DNE && leftChild == NODE_DNE; }
+        boolean isRightChild() { return parentNode.rightChild == this; }
+        boolean isLeftChild() { return parentNode.leftChild == this; }
+        int childCount() {
             if (rightChild != NODE_DNE && leftChild != NODE_DNE) return 2;
             else if (rightChild != NODE_DNE || leftChild != NODE_DNE) return 1;
             else return 0;

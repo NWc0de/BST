@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * A set of tests covering the basic functions of the BST class.
  */
-public class TestBST {
+public class BSTTests {
 
     @Test
     public void testInsert() {
@@ -33,7 +33,7 @@ public class TestBST {
         }
         for (int x : elements) {
             Assert.assertTrue(testBST.get(x) != null);
-            Assert.assertEquals(testBST.get(x), x);
+            Assert.assertEquals(testBST.get(x), (Integer) x);
             Assert.assertTrue(testBST.isValidBST());
         }
     }
@@ -138,7 +138,7 @@ public class TestBST {
      * in the left subtree is leq n, every element in the right subtree is
      * greater).
      */
-    private static final class BSTTestCase<T, K extends Comparable> extends BST {
+    static class BSTTestCase<T, K extends Comparable> extends BST<T, K> {
 
         private enum ORIENT {LEFT, RIGHT};
 
@@ -156,7 +156,7 @@ public class TestBST {
          * Checks if the tree violates the BST property: every node is
          * greater than or equal to all nodes in it's left subtree and
          * less than all nodes in it's right subtree.
-         * @complexity O(n^2) (needs improvement)
+         * @complexity O(n^2)
          * @return true if this tree has the BST property, false if not
          */
         private boolean isValidBST(Node n) {
