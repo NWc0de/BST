@@ -2,6 +2,7 @@
  * The main class declaration for the binary search tree data type.
  */
 
+import java.util.HashSet;
 import java.util.Stack;
 
 /**
@@ -92,7 +93,7 @@ class BST<T, K extends Comparable> {
      */
     public T select(int n) {
         if (n <= 0 || n > root.getNodeCount()) throw new IllegalArgumentException("Rank cannot be less than 0 or greater than the size of the BST.");
-        Node rankN = select(n-1, root);
+        Node rankN = select(n - 1, root);
         return rankN.getValue();
     }
 
@@ -108,7 +109,7 @@ class BST<T, K extends Comparable> {
      * @return the object associated with next least key, if it exists, if not null
      */
     public T predecessor(K key) {
-        Node pred = nextLeastNode(search(key, false), false);
+        Node pred = nextLeastNode(search(key, false));
         return pred == NODE_DNE ? null : pred.getValue();
     }
 
@@ -138,14 +139,60 @@ class BST<T, K extends Comparable> {
     }
 
     /**
-     * Compares to K key values by calling compareTo
-     * @param key1 the first key to be compared
-     * @param key2 the second key to be compared
-     * @return 0 if key1 == key2, a negative int if key1 < key2, a positive int if key1 > key2
+     * Deletes the first node in the subtree with key equal to the key parameter. O(n)
+     * @param key the key associated with the object to be deleted
+     * @return the node was that deleted, or NODE_DNE if no Node with the specified key exists
      */
-    @SuppressWarnings("unchecked")
-    protected int cmp(K key1, K key2) {
-        return key1.compareTo(key2);
+    protected Node delete(K key) {
+        Node curr = search(key, true); // decrement while traversing during search
+        if (curr.valCount() > 1 || curr == NODE_DNE) return curr;
+
+        if (curr.isLeaf()) {
+            supplant(curr, NODE_DNE);
+        } else if (curr.childCount() == 1) {
+            Node child = curr.getRightChild() == NODE_DNE ? curr.getLeftChild() : curr.getRightChild();
+            supplant(curr, child);
+        } else {
+            Node scr = localMin(curr.getRightChild()); // can also be localMax(n.getLeftChild)
+            supplant(scr, scr.getRightChild());
+            scr.setNodeCount(curr.getNodeCount() - 1);
+            supplant(curr, scr);
+
+            curr.getLeftChild().setParentNode(scr);
+            curr.getRightChild().setParentNode(scr);
+            scr.setRightChild(curr.getRightChild());
+            scr.setLeftChild(curr.getLeftChild());
+        }
+
+        return curr;
+    }
+
+    /**
+     * Returns the maximum element in the subtree rooted at n.
+     * @param n the root of the subtree to examine
+     * @return the maximum element in the subtree rooted at n
+     */
+    protected Node localMax(Node n) {
+        if (n == NODE_DNE) throw new IllegalArgumentException("Tree is empty.");
+        Node next = n;
+        while (next.getRightChild() != NODE_DNE) {
+            next = next.getRightChild();
+        }
+        return next;
+    }
+
+    /**
+     * Returns the minimum element in the subtree rooted at n.
+     * @param n the root of the subtree to examine
+     * @return the minimum element in the subtree rooted at n
+     */
+    protected Node localMin(Node n) {
+        if (n == NODE_DNE) throw new IllegalArgumentException("Tree is empty.");
+        Node next = n;
+        while (next.getLeftChild() != NODE_DNE) {
+            next = next.getLeftChild();
+        }
+        return next;
     }
 
     /**
@@ -156,7 +203,7 @@ class BST<T, K extends Comparable> {
      * @param dec flag to indicate whether to decrement node count during traversal
      * @return the Node associated with that Key, or NODE_DNE if none exists
      */
-    private Node search(K key, boolean dec) {
+    protected Node search(K key, boolean dec) {
         if (root == NODE_DNE) throw new IllegalStateException("Cannot search an empty tree.");
         Node next = root;
         int kCmp = cmp(root.getKey(), key);
@@ -169,6 +216,34 @@ class BST<T, K extends Comparable> {
     }
 
     /**
+     * Node in takes the place of node out.
+     * @param out the node that will be removed
+     * @param in the node that will take out's place
+     */
+    protected void supplant(Node out, Node in) {
+        if (out == root) {
+            root = in;
+        } else if (out.isLeftChild()) {
+            out.getParentNode().setLeftChild(in);
+        } else {
+            out.getParentNode().setRightChild(in);
+        }
+
+        if (in != NODE_DNE) in.setParentNode(out.getParentNode());
+    }
+
+    /**
+     * Compares to K key values by calling compareTo
+     * @param key1 the first key to be compared
+     * @param key2 the second key to be compared
+     * @return 0 if key1 == key2, a negative int if key1 < key2, a positive int if key1 > key2
+     */
+    @SuppressWarnings("unchecked")
+    protected int cmp(K key1, K key2) {
+        return key1.compareTo(key2);
+    }
+
+    /**
      * Recursively traverses the tree searching for the nth smallest key.
      * @param n the order of key to search for
      * @param next the Node to process (initially root)
@@ -177,175 +252,26 @@ class BST<T, K extends Comparable> {
     private Node select(int n, Node next) {
         int lSize = next.getLeftChild().getNodeCount();
         if (n < lSize) return select(n, next.getLeftChild());
-        else if (n > lSize) return select(n - lSize - 1, next.getRightChild());
+        else if (n > lSize + next.valCount()) return select(n - lSize - next.valCount() - 1, next.getRightChild());
         else return next;
     }
 
     /**
-     * Deletes the first node in the subtree with key equal to the key parameter. O(n)
-     * @param key the key associated with the object to be deleted
-     * @return the node was that deleted, or NODE_DNE if no Node with the specified key exists
-     */
-    private Node delete(K key) {
-        Node curr = search(key, true); // decrement while traversing during search
-        if (curr.valCount() > 1 || curr == NODE_DNE) return curr;
-
-        if (curr.isLeaf()) {
-            deleteLeaf(curr);
-        } else if (curr.childCount() == 1) {
-            deleteNodeOC(curr);
-        } else {
-            deleteNodeTC(curr);
-        }
-        return curr;
-    }
-
-    /**
-     * Deletes a leaf by removing the node's parent's reference to the node.
-     * @param n the node to delete
-     */
-    private void deleteLeaf(Node n) {
-        if (!n.isLeaf()) throw new IllegalArgumentException("Node is not leaf.");
-        if (n.getParentNode().getRightChild() == n) {
-            n.getParentNode().setRightChild(NODE_DNE);
-        } else {
-            n.getParentNode().setLeftChild(NODE_DNE);
-        }
-    }
-
-    /**
-     * Splices n out by replacing n with it's child node.
-     * @param n the node to delete
-     */
-    private void deleteNodeOC(Node n) {
-        if (n.childCount() != 1) throw new IllegalArgumentException("Node does not have one child.");
-        Node child = n.getRightChild() == NODE_DNE ? n.getLeftChild() : n.getRightChild();
-        if (n == root) {
-            root = child;
-            child.setParentNode(NODE_DNE);
-        } else if (n.isRightChild()) {
-            n.getParentNode().setRightChild(child);
-            child.setParentNode(n.getParentNode());
-        } else {
-            n.getParentNode().setLeftChild(child);
-            child.setParentNode(n.getParentNode());
-        }
-    }
-
-    /**
-     * Deletes a node by replacing n with it's leq predecessor. O(n)
-     * @param n the object to be deleted
-     */
-    private void deleteNodeTC(Node n) {
-        if (n.childCount() != 2) throw new IllegalArgumentException("Node does not have two children.");
-        Node pred = nextLeastNode(n, true); // find next leq node
-        splice(pred);
-        pred.setNodeCount(n.getNodeCount() - 1);
-        if (n == root) {
-            root = pred;
-            pred.setParentNode(NODE_DNE);
-        } else if (n.isRightChild()) {
-            n.getParentNode().setRightChild(pred);
-            pred.setParentNode(n.getParentNode());
-        } else {
-            n.getParentNode().setLeftChild(pred);
-            pred.setParentNode(n.getParentNode());
-        }
-        n.getLeftChild().setParentNode(pred);
-        n.getRightChild().setParentNode(pred);
-        pred.setRightChild(n.getRightChild());
-        pred.setLeftChild(n.getLeftChild());
-    }
-
-    /**
-     * Removes a node by joining it's parent and child. Assumes n does not have
-     * right child, as this method is only called with the predecessor of a node
-     * that has two children.
-     * @param n the node to splice
-     */
-    private void splice(Node n) {
-        if (n.isRightChild() && !n.isLeaf()) {
-            n.getParentNode().setRightChild(n.getLeftChild());
-            n.getLeftChild().setParentNode(n.getParentNode());
-        } else if (n.isLeftChild() && !n.isLeaf()) {
-            n.getParentNode().setLeftChild(n.getLeftChild());
-            n.getLeftChild().setParentNode(n.getParentNode());
-        } else if (n.isRightChild()) {
-            n.getParentNode().setRightChild(NODE_DNE);
-        } else {
-            n.getParentNode().setLeftChild(NODE_DNE);
-        }
-    }
-
-    /**
-     * Returns the node with the next smallest key or the next smallest or
-     * equal key if the eq flag is set.
+     * Returns the node with the next smallest key or NODE_DNE is the node with
+     * the provided key is the minimum node.
      * @param n the node to compare against
-     * @param eq flag to signify searching for the next smallest or equal key
      * @return the node with the next smallest key, or NODE_DNE if the node at key is min
      */
-    private Node nextLeastNode(Node n, boolean eq) {
+    private Node nextLeastNode(Node n) {
         Node nextLeast;
         if (n == NODE_DNE) throw new IllegalArgumentException("No node associated with key.");
-        if ((eq && n.getLeftChild() == NODE_DNE) || (!eq && leftSubTreeEmpty(n))) {
+        if (n.getLeftChild() == NODE_DNE) {
             nextLeast = firstParentRL(n);
-        } else if (eq) {
-            nextLeast = localMax(n.getLeftChild());
         } else {
-            nextLeast = localNeqMax(n.getLeftChild(), n);
+            nextLeast = localMax(n.getLeftChild());
         }
+
         return nextLeast;
-    }
-
-    /**
-     * Determines whether the left subtree of the given node is "empty" meaning it is
-     * either null or contains all nodes with keys equal to n.
-     * @complexity O(height(n)) - height of the node n
-     * @param n the node to begin the subtree search at
-     * @return a boolean indicating whether the left subtree is empty or not
-     */
-    private boolean leftSubTreeEmpty(Node n) {
-        if (n.getLeftChild() == NODE_DNE) return true;
-        Node next = n.getLeftChild();
-        while (next != NODE_DNE) { // if any left node != n, or any right node in the ST exists, not empty
-            int lCmp = cmp(next.getKey(), n.getKey());
-            if (lCmp != 0 || next.getRightChild() != NODE_DNE) return false;
-            next = next.getLeftChild();
-        }
-        return true;
-    }
-
-    /**
-     * Returns the maximum element in the subtree rooted at n.
-     * @param n the root of the subtree to examine
-     * @return the maximum element in the subtree rooted at n
-     */
-    private Node localMax(Node n) {
-        if (n == NODE_DNE) throw new IllegalArgumentException("Tree is empty.");
-        Node next = n;
-        while (next.getRightChild() != NODE_DNE) {
-            next = next.getRightChild();
-        }
-        return next;
-    }
-
-    /**
-     * Returns the maximum element in n's left subtree, excluding values with key's equal to eq.
-     * Assumes there is as least one key in n's left subtree that is not equal to eq.
-     * @param n the root of the subtree to search
-     * @param eq the node containing the key that will be excluded from the search
-     * @return the node containing the maximum key in that subtree (excluding nodes with keys equal to nq)
-     */
-    private Node localNeqMax(Node n, Node eq) {
-        if (n == NODE_DNE) throw new IllegalStateException("Empty tree.");
-        if (eq==NODE_DNE || eq==null) throw new IllegalArgumentException("Equality node is null or DNE.");
-        Node next = n;
-        while (next.getRightChild() != NODE_DNE || nodeEq(next, eq)) { // until we find a node with no right child that is not equal to eq
-            if (next.isLeaf() && nodeEq(next, eq)) return firstNeqParent(next, eq);
-            if (nodeEq(next, eq) && next.getLeftChild() != NODE_DNE) next = next.getLeftChild(); // if node is equal, left subtree could contain max
-            else next = next.getRightChild();
-        }
-        return next;
     }
 
     /**
@@ -363,27 +289,6 @@ class BST<T, K extends Comparable> {
         return next.getParentNode();
     }
 
-    /**
-     * Returns the first parent node of n (or n itself) with a key that is not equal to eq.
-     * Assumes there is a parent node of n (or n itself) with a key not equal to n.
-     * @param n the node to begin with
-     * @param eq the node to compare keys against
-     * @return the first parent node of n (or n itself) with a key that is not equal to eq
-     */
-    private Node firstNeqParent(Node n, Node eq) {
-        if (n == NODE_DNE) throw new IllegalStateException("Empty tree.");
-        if (eq==NODE_DNE || eq==null) throw new IllegalArgumentException("Equality node is null or DNE.");
-        Node next = n;
-        while (nodeEq(next, eq)) {
-            next = next.getParentNode();
-        }
-        return next;
-    }
-
-    private boolean nodeEq(Node n, Node m) {
-        return cmp(n.getKey(), m.getKey()) == 0;
-    }
-
     class Node {
 
         private Node parentNode;
@@ -396,7 +301,7 @@ class BST<T, K extends Comparable> {
 
         Node(Node parentNode, T value, K key) {
             this.parentNode = parentNode;
-            this.values.push(value);
+            if (value != null) this.values.push(value);
             this.key = key;
             nodeCount = parentNode == null ? 0 : 1; // NODE_DNE has nodeCount 0
         }

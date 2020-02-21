@@ -4,9 +4,9 @@
 
 import org.junit.Assert;
 import org.junit.Test;
+import util.ListUtils;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.List;
 
 /**
  * A set of unit tests covering the basic functions of the red black BST class.
@@ -15,18 +15,43 @@ public class RebBlackBSTTests {
 
     @Test
     public void testInsert() {
-        RedBlackBSTTestCase<Integer, Integer> testBST = new RedBlackBSTTestCase<>();
-        int[] ints = new int[] {3, 0, 5, 1, 9, 8, 10, 7, 8, 1};
-        //Random gen = new Random();
-        for (int i = 0; i < 10; i++) {
-            //Integer random = gen.nextInt(10);
-            int random = ints[i];
-            testBST.put(random, random);
+        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
+        List<Integer> ints = ListUtils.genIntList(1000);
+        for (int i = 0; i < ints.size(); i++) {
+            testBST.put(ints.get(i), ints.get(i));
             Assert.assertTrue(testBST.isValidBST());
         }
     }
 
-    static class RedBlackBSTTestCase<T, K extends Comparable> extends RedBlackBST<T, K> {
+    @Test
+    public void testGet() {
+        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
+        List<Integer> elements = ListUtils.genIntList(1000, 1000);
+        for (int i = 0; i < elements.size(); i++) {
+            testBST.put(elements.get(i), elements.get(i));
+        }
+        for (int x : elements) {
+            Assert.assertTrue(testBST.get(x) != null);
+            Assert.assertEquals(testBST.get(x), (Integer) x);
+            Assert.assertTrue(testBST.isValidBST());
+        }
+    }
+
+    @Test
+    public void testRemove() {
+        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
+        List<Integer> elements = ListUtils.genIntList(10, 10);
+        for (int i = 0; i < elements.size(); i++) {
+            testBST.put(elements.get(i), elements.get(i));
+        }
+        for (int x : elements) {
+            Integer rmvd = testBST.remove(x);
+            Assert.assertEquals(rmvd, Integer.valueOf(x));
+            Assert.assertTrue(testBST.isValidBST());
+        }
+    }
+
+    static class RedBlackTestBST<T, K extends Comparable> extends RedBlackBST<T, K> {
 
         private enum ORIENT {LEFT, RIGHT};
 
@@ -48,6 +73,7 @@ public class RebBlackBSTTests {
          * @return true if this tree has the BST property, false if not
          */
         private boolean isValidBST(Node n) {
+            if (root.getColor() != Color.BLACK) return false;
             boolean isValid = true;
             if (n == NODE_DNE) return isValid;
 
@@ -56,6 +82,12 @@ public class RebBlackBSTTests {
 
             if (l != NODE_DNE) isValid = isValid && isValidSubTree(n, l, ORIENT.LEFT);
             if (r != NODE_DNE) isValid = isValid && isValidSubTree(n, r, ORIENT.RIGHT);
+
+            if (n.getColor() == Color.RED) {
+                isValid = isValid
+                        && l.getColor() == Color.BLACK
+                        && r.getColor() == Color.BLACK;
+            }
 
             return isValid && isValidBST(l) && isValidBST(r);
         }
@@ -92,10 +124,10 @@ public class RebBlackBSTTests {
          * @param n the parent node
          * @param c the child node
          * @param dir the orientation, left returns n >= m, right returns n < m
-         * @return if left is true return indicates whether n >= m, if not return indicates whether n < m
+         * @return if left is true return indicates whether n > m, if not return indicates whether n < m
          */
         private boolean validChild(Node n, Node c, ORIENT dir) {
-            return dir == ORIENT.LEFT ? n.getKey().compareTo(c.getKey()) >= 0 : n.getKey().compareTo(c.getKey()) < 0;
+            return dir == ORIENT.LEFT ? n.getKey().compareTo(c.getKey()) > 0 : n.getKey().compareTo(c.getKey()) < 0;
         }
     }
 }

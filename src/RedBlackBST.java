@@ -9,29 +9,68 @@
  */
 class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
 
-
     /**
      * Inserts an object by finding it's place via binary search and creating
-     * a new node, then calls balanceTree to maintain red black invariant - O(log(n))
+     * a new node, then calls balanceInsertion to maintain red black invariant.
      * @param object the object to insert
      * @param key the key associated with object to be inserted
      */
     @Override
     protected void insert(T object, K key) {
-        Node next = root;
-        Node last = root;
-        int kCmp = cmp(root.getKey(), key);
-        while(next != NODE_DNE) {
+        Node last, next = root;
+        int kCmp;
+        do {
             kCmp = cmp(next.getKey(), key);
             next.incrementNodeCount(1);
             last = next;
             next = kCmp < 0 ? next.getRightChild() : next.getLeftChild();
-        }
+        } while (kCmp != 0 && next != NODE_DNE);
 
         Node insert = new Node(last, object, key, Color.RED);
+
         if (kCmp < 0) last.setRightChild(insert);
-        else last.setLeftChild(insert);
-        balanceInsertion(insert);
+        else if (kCmp > 0) last.setLeftChild(insert);
+
+        if (kCmp == 0) last.pushValue(object);
+        else balanceInsertion(insert);
+    }
+
+    /**
+     * Deletes the first node in the subtree with key equal to the key parameter then
+     * calls balanceDeletion to maintain red black invariant.
+     * @param key the key associated with the object to be deleted
+     * @return the node was that deleted, or NODE_DNE if no Node with the specified key exists
+     */
+    @Override
+    protected Node delete(K key) {
+        Node repl, curr = search(key, true); // repl will point to the node that replaced curr
+        Color oc = curr.getColor();
+        if (curr.valCount() > 1 || curr == NODE_DNE) return curr;
+
+        if (curr.isLeaf()) {
+            repl = NODE_DNE;
+            repl.setParentNode(curr); // temporarily set NODE_DNE's parent to enables traversing during balancing
+            supplant(curr, NODE_DNE);
+        } else if (curr.childCount() == 1) {
+            repl = curr.getRightChild() == NODE_DNE ? curr.getLeftChild() : curr.getRightChild();
+            supplant(curr, repl);
+        } else {
+            Node scr = localMin(curr.getRightChild()); // can also be localMax(n.getLeftChild)
+            oc = scr.getColor();
+            repl = scr.getRightChild();
+
+            supplant(scr, scr.getRightChild());
+            scr.setNodeCount(curr.getNodeCount() - 1);
+            supplant(curr, scr);
+
+            scr.setColor(curr.getColor());
+            curr.getLeftChild().setParentNode(scr);
+            curr.getRightChild().setParentNode(scr);
+            scr.setRightChild(curr.getRightChild());
+            scr.setLeftChild(curr.getLeftChild());
+        }
+
+        return curr;
     }
 
     /**
@@ -53,8 +92,8 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
                 unc.setColor(Color.BLACK);
                 curr.getGrandParent().setColor(Color.RED);
                 curr = curr.getGrandParent();
-            } else if (curr.getParentNode().isLeftChild()) { // Case 2-3: Black uncle
-                if (curr.isRightChild()) {
+            } else if (curr.getParentNode().isLeftChild()) { // Case 2: Black uncle, n is left child
+                if (curr.isRightChild()) { // Case 3: Black Uncle, n is right child
                     curr = curr.getParentNode();
                     leftRotate(curr);
                 }
@@ -89,13 +128,15 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
             rc.setParentNode(NODE_DNE);
         } else if (n.isLeftChild()) {
             pr.setLeftChild(rc);
+            rc.setParentNode(pr);
         } else {
             pr.setRightChild(rc);
+            rc.setParentNode(pr);
         }
-        rc.setParentNode(pr);
         rc.setLeftChild(n);
-        n.setRightChild(rlc);
         n.setParentNode(rc);
+        n.setRightChild(rlc);
+        rlc.setParentNode(n);
     }
 
     /**
@@ -113,12 +154,14 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
             lc.setParentNode(NODE_DNE);
         } else if (n.isLeftChild()) {
             pr.setLeftChild(lc);
+            lc.setParentNode(pr);
         } else {
             pr.setRightChild(lc);
+            lc.setParentNode(pr);
         }
-        lc.setParentNode(pr);
         lc.setRightChild(n);
-        n.setLeftChild(lrc);
         n.setParentNode(lc);
+        n.setLeftChild(lrc);
+        lrc.setParentNode(n);
     }
 }

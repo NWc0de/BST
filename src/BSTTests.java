@@ -5,6 +5,7 @@
 
 import org.junit.Assert;
 import org.junit.Test;
+import util.ListUtils;
 
 import java.util.*;
 
@@ -15,7 +16,7 @@ public class BSTTests {
 
     @Test
     public void testInsert() {
-        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        TestBST<Integer, Integer> testBST = new TestBST<>();
         Random gen = new Random();
         for (int i = 0; i < 1000; i++) {
             Integer random = gen.nextInt();
@@ -26,8 +27,8 @@ public class BSTTests {
 
     @Test
     public void testGet() {
-        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
-        List<Integer> elements = genIntList(1000, 1000);
+        TestBST<Integer, Integer> testBST = new TestBST<>();
+        List<Integer> elements = ListUtils.genIntList(1000, 1000);
         for (int i = 0; i < elements.size(); i++) {
             testBST.put(elements.get(i), elements.get(i));
         }
@@ -40,13 +41,13 @@ public class BSTTests {
 
     @Test
     public void testRemove() {
-        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
-        List<Integer> elements = genIntList(1000, 1000);
+        TestBST<Integer, Integer> testBST = new TestBST<>();
+        List<Integer> elements = ListUtils.genIntList(1000, 1000);
         for (int i = 0; i < elements.size(); i++) {
             testBST.put(elements.get(i), elements.get(i));
         }
         for (int x : elements) {
-            Integer rmvd = (Integer) testBST.remove(x);
+            Integer rmvd = testBST.remove(x);
             Assert.assertEquals(rmvd, Integer.valueOf(x));
             Assert.assertTrue(testBST.isValidBST());
         }
@@ -54,21 +55,21 @@ public class BSTTests {
 
     @Test
     public void testSelect() {
-        List<Integer> testList = genUniqueList(10000, 10000);
-        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
-        for (int x : testList) {
+        TestBST<Integer, Integer> testBST = new TestBST<>();
+        List<Integer> elements = ListUtils.genIntList(10000, 10000);
+        for (int x : elements) {
             testBST.put(x, x);
         }
-        Collections.sort(testList);
-        for (int i = 1; i <= testList.size(); i++) {
-            Assert.assertEquals(testList.get(i-1), testBST.select(i));
+        Collections.sort(elements);
+        for (int i = 1; i <= elements.size(); i++) {
+            Assert.assertEquals(elements.get(i - 1), testBST.select(i));
         }
     }
 
     @Test
     public void testPredecessor() {
-        List<Integer> testList = genIntList(10000, 10000);
-        BSTTestCase<Integer, Integer> testBST = new BSTTestCase<>();
+        List<Integer> testList = ListUtils.genIntList(10000, 10000);
+        TestBST<Integer, Integer> testBST = new TestBST<>();
         for (int x : testList) {
             testBST.put(x, x);
         }
@@ -84,10 +85,10 @@ public class BSTTests {
     @Test
     public void testMinMax() {
         List<Integer> testList;
-        BSTTestCase<Integer, Integer> testBST;
+        TestBST<Integer, Integer> testBST;
         for (int i = 0; i < 1000; i++) {
-            testList = genIntList(1000, 1000);
-            testBST = new BSTTestCase<>();
+            testList = ListUtils.genIntList(1000, 1000);
+            testBST = new TestBST<>();
             for (int x : testList) {
                 testBST.put(x, x);
             }
@@ -100,45 +101,12 @@ public class BSTTests {
     }
 
     /**
-     * Generates a random List of Integers
-     * @param count the desired number of Integer objects in the list
-     * @param bound the maximum value for the Integers added to the list
-     * @return an ArrayList containing count Integers with a max value of bound
-     */
-    private List<Integer> genIntList(int count, int bound) {
-        List<Integer> userList = new ArrayList<Integer>();
-        Random gen = new Random();
-        for (int i = 0; i < count; i++) {
-            userList.add(gen.nextInt(bound));
-        }
-        return userList;
-    }
-
-    /**
-     * Genereates a random array of unique Integers (no duplicate values)
-     * @param count the number of Integers to generate
-     * @param bound the maximum value for the Integers added to the list
-     * @return an ArrayList containing count Integers with a max value of bound
-     */
-    private List<Integer> genUniqueList(int count, int bound) {
-        if (count > bound) throw new IllegalArgumentException("Not enough unique values to fill the array (bound too low).");
-        List<Integer> userList = new ArrayList<>();
-        Random gen = new Random();
-        while (userList.size() != count) {
-            Integer x = gen.nextInt(bound);
-            while (userList.contains(x)) x = gen.nextInt(bound);
-            userList.add(x);
-        }
-        return userList;
-    }
-
-    /**
      * A special case of the BST class that includes methods to determine
      * whether the current instance upholds the BST property (every element
      * in the left subtree is leq n, every element in the right subtree is
      * greater).
      */
-    static class BSTTestCase<T, K extends Comparable> extends BST<T, K> {
+    static class TestBST<T, K extends Comparable> extends BST<T, K> {
 
         private enum ORIENT {LEFT, RIGHT};
 
@@ -203,11 +171,11 @@ public class BSTTests {
          * Compares two nodes with respect the right or left subtree property.
          * @param n the parent node
          * @param c the child node
-         * @param dir the orientation, left returns n >= m, right returns n < m
-         * @return if left is true return indicates whether n >= m, if not return indicates whether n < m
+         * @param dir the orientation, left returns n > m, right returns n < m
+         * @return if left is true return indicates whether n > m, if not return indicates whether n < m
          */
         private boolean validChild(Node n, Node c, ORIENT dir) {
-            return dir == ORIENT.LEFT ? n.getKey().compareTo(c.getKey()) >= 0 : n.getKey().compareTo(c.getKey()) < 0;
+            return dir == ORIENT.LEFT ? n.getKey().compareTo(c.getKey()) > 0 : n.getKey().compareTo(c.getKey()) < 0;
         }
     }
 
