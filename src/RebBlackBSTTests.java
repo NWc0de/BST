@@ -6,6 +6,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import util.ListUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,17 +18,17 @@ public class RebBlackBSTTests {
 
     @Test
     public void testInsert() {
-        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
+        TestRedBlackBST<Integer, Integer> testBST = new TestRedBlackBST<>();
         List<Integer> ints = ListUtils.genIntList(1000);
         for (int i = 0; i < ints.size(); i++) {
             testBST.put(ints.get(i), ints.get(i));
-            Assert.assertTrue(testBST.isValidBST());
+            Assert.assertTrue(testBST.isValidRBST());
         }
     }
 
     @Test
     public void testGet() {
-        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
+        TestRedBlackBST<Integer, Integer> testBST = new TestRedBlackBST<>();
         List<Integer> elements = ListUtils.genIntList(1000, 1000);
         for (int i = 0; i < elements.size(); i++) {
             testBST.put(elements.get(i), elements.get(i));
@@ -33,25 +36,32 @@ public class RebBlackBSTTests {
         for (int x : elements) {
             Assert.assertTrue(testBST.get(x) != null);
             Assert.assertEquals(testBST.get(x), (Integer) x);
-            Assert.assertTrue(testBST.isValidBST());
+            Assert.assertTrue(testBST.isValidRBST());
         }
     }
 
     @Test
     public void testRemove() {
-        RedBlackTestBST<Integer, Integer> testBST = new RedBlackTestBST<>();
-        List<Integer> elements = ListUtils.genIntList(10, 10);
+        TestRedBlackBST<Integer, Integer> testBST = new TestRedBlackBST<>();
+        List<Integer> elements = ListUtils.genIntList(1000, 1000);
+        System.out.println(elements.toString());
         for (int i = 0; i < elements.size(); i++) {
             testBST.put(elements.get(i), elements.get(i));
         }
         for (int x : elements) {
             Integer rmvd = testBST.remove(x);
             Assert.assertEquals(rmvd, Integer.valueOf(x));
-            Assert.assertTrue(testBST.isValidBST());
+            Assert.assertTrue(testBST.isValidRBST());
         }
     }
 
-    static class RedBlackTestBST<T, K extends Comparable> extends RedBlackBST<T, K> {
+    private List<Integer> intArrayToList(int[] arr) {
+        ArrayList<Integer> list = new ArrayList<>();
+        for (int x : arr) list.add(x);
+        return list;
+    }
+
+    static class TestRedBlackBST<T, K extends Comparable> extends RedBlackBST<T, K> {
 
         private enum ORIENT {LEFT, RIGHT};
 
@@ -60,8 +70,9 @@ public class RebBlackBSTTests {
          * BST.
          * @return a boolean indicating whether the BST property holds
          */
-        public boolean isValidBST() {
-            return isValidBST(root);
+        public boolean isValidRBST() {
+            if (root.getColor() != Color.BLACK) return false; // property 2
+            return isValidRBST(root);
         }
 
 
@@ -72,24 +83,24 @@ public class RebBlackBSTTests {
          * @complexity O(n^2)
          * @return true if this tree has the BST property, false if not
          */
-        private boolean isValidBST(Node n) {
-            if (root.getColor() != Color.BLACK) return false;
+        private boolean isValidRBST(Node n) {
             boolean isValid = true;
             if (n == NODE_DNE) return isValid;
+            if (!isBlackHeightSymmetric(n)) return false; // property 5
 
             Node l = n.getLeftChild();
             Node r = n.getRightChild();
 
-            if (l != NODE_DNE) isValid = isValid && isValidSubTree(n, l, ORIENT.LEFT);
-            if (r != NODE_DNE) isValid = isValid && isValidSubTree(n, r, ORIENT.RIGHT);
-
-            if (n.getColor() == Color.RED) {
+            if (n.getColor() == Color.RED) { // property 4
                 isValid = isValid
                         && l.getColor() == Color.BLACK
                         && r.getColor() == Color.BLACK;
             }
 
-            return isValid && isValidBST(l) && isValidBST(r);
+            if (l != NODE_DNE) isValid = isValid && isValidSubTree(n, l, ORIENT.LEFT);
+            if (r != NODE_DNE) isValid = isValid && isValidSubTree(n, r, ORIENT.RIGHT);
+
+            return isValid && isValidRBST(l) && isValidRBST(r);
         }
 
         /**
@@ -117,6 +128,44 @@ public class RebBlackBSTTests {
                         && isValidSubTree(n, r, dir);
             }
             return validST && validChild(n, c, dir);
+        }
+
+        /**
+         * Tests Red Black BST property 5, that the number of black nodes on
+         * any path from n to a leaf node is the same.
+         * @param n the root of the subtree to analyze
+         * @return a boolean indicating whether this subtree fulfilling property 5
+         */
+        private boolean isBlackHeightSymmetric(Node n) {
+            List<Integer> pathLens = new ArrayList<>();
+            getBlackPathLengths(pathLens, n, 0);
+            if (pathLens.size() <= 1) return true;
+            boolean eqPathLen = true;
+            int prev = pathLens.get(0);
+            for (int x : pathLens) {
+                eqPathLen = eqPathLen && (prev == x);
+                prev = x;
+            }
+
+            return eqPathLen;
+        }
+
+        /**
+         * Recursively traverses all paths from the provided node to all leafs and fills the
+         * provided list with each path length (only counting black nodes).
+         * @param pathLens the list to fill with each path length
+         * @param n the node to begin the traversal at
+         * @param curr the current cumulative path length (should initially be 0 or 1)
+         */
+        private void getBlackPathLengths(List<Integer> pathLens, Node n, int curr) {
+            int curLen = curr;
+            if (n.getColor() == Color.BLACK) curLen++;
+            if (n.isLeaf()) {
+                pathLens.add(curLen);
+                return;
+            }
+            if (n.getLeftChild() != NODE_DNE) getBlackPathLengths(pathLens, n.getLeftChild(), curLen);
+            if (n.getRightChild() != NODE_DNE) getBlackPathLengths(pathLens, n.getRightChild(), curLen);
         }
 
         /**

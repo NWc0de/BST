@@ -2,7 +2,6 @@
  * The main class declaration for the binary search tree data type.
  */
 
-import java.util.HashSet;
 import java.util.Stack;
 
 /**
@@ -224,12 +223,12 @@ class BST<T, K extends Comparable> {
         if (out == root) {
             root = in;
         } else if (out.isLeftChild()) {
-            out.getParentNode().setLeftChild(in);
+            out.getParent().setLeftChild(in);
         } else {
-            out.getParentNode().setRightChild(in);
+            out.getParent().setRightChild(in);
         }
 
-        if (in != NODE_DNE) in.setParentNode(out.getParentNode());
+        if (in != NODE_DNE) in.setParentNode(out.getParent());
     }
 
     /**
@@ -275,18 +274,18 @@ class BST<T, K extends Comparable> {
     }
 
     /**
-     * Searchs up the tree from Node n for the first right turn (the first instance
-     * where n or n's parent is a right link.
+     * Searches up the tree from Node n for the first right turn (the first instance
+     * where n is a right link.
      * @param n the node to begin the search at
      * @return the first right parent of n, or null if n is the min
      */
     private Node firstParentRL(Node n) {
         Node next = n;
         while (next != root && !next.isRightChild()) {
-            next = next.getParentNode();
+            next = next.getParent();
         }
-        if (next==root || cmp(next.getParentNode().getKey(), n.getKey()) >= 0) return NODE_DNE; // n was min
-        return next.getParentNode();
+        if (next==root || cmp(next.getParent().getKey(), n.getKey()) >= 0) return NODE_DNE; // n was min
+        return next.getParent();
     }
 
     class Node {
@@ -315,8 +314,8 @@ class BST<T, K extends Comparable> {
             this.nodeColor = nodeColor;
         }
 
-        Node getParentNode() { return parentNode; }
-        Node getGrandParent() { return parentNode.getParentNode(); }
+        Node getParent() { return parentNode; }
+        Node getGrandParent() { return parentNode.getParent(); }
         Node getLeftChild() { return leftChild; }
         Node getRightChild() { return rightChild; }
 

@@ -68,33 +68,33 @@ public class BSTTests {
 
     @Test
     public void testPredecessor() {
-        List<Integer> testList = ListUtils.genIntList(10000, 10000);
+        List<Integer> elements = ListUtils.genIntList(1000, 1000);
         TestBST<Integer, Integer> testBST = new TestBST<>();
-        for (int x : testList) {
+        for (int x : elements) {
             testBST.put(x, x);
         }
-        Collections.sort(testList);
-        Assert.assertEquals(testBST.predecessor(testList.get(0)), null); // min should have no predecessor
-        for (int i = 0; i < testList.size() - 1; i++) {
-            Integer pred = testList.get(i);
-            Integer curr = testList.get(i+1);
+        Collections.sort(elements);
+        Assert.assertEquals(testBST.predecessor(elements.get(0)), null); // min should have no predecessor
+        for (int i = 0; i < elements.size() - 1; i++) {
+            Integer pred = elements.get(i);
+            Integer curr = elements.get(i+1);
             if (pred.compareTo(curr) != 0) Assert.assertEquals(pred, testBST.predecessor(curr));
         }
     }
 
     @Test
     public void testMinMax() {
-        List<Integer> testList;
+        List<Integer> elements;
         TestBST<Integer, Integer> testBST;
         for (int i = 0; i < 1000; i++) {
-            testList = ListUtils.genIntList(1000, 1000);
+            elements = ListUtils.genIntList(1000, 1000);
             testBST = new TestBST<>();
-            for (int x : testList) {
+            for (int x : elements) {
                 testBST.put(x, x);
             }
-            Collections.sort(testList);
-            Integer expectedMin = testList.get(0);
-            Integer expectedMax = testList.get(testList.size() - 1);
+            Collections.sort(elements);
+            Integer expectedMin = elements.get(0);
+            Integer expectedMax = elements.get(elements.size() - 1);
             Assert.assertEquals(expectedMax, testBST.max());
             Assert.assertEquals(expectedMin, testBST.min());
         }
