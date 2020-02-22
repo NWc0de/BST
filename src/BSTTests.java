@@ -62,8 +62,11 @@ public class BSTTests {
         }
         Collections.sort(elements);
         for (int i = 1; i <= elements.size(); i++) {
+            //System.out.println(elements.get(i - 1) + " = " + testBST.select(i));
             Assert.assertEquals(elements.get(i - 1), testBST.select(i));
         }
+        Assert.assertEquals(testBST.select(1), testBST.min());
+        Assert.assertEquals(testBST.select(testBST.size()), testBST.max());
     }
 
     @Test

@@ -21,7 +21,7 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
         int kCmp;
         do {
             kCmp = cmp(next.getKey(), key);
-            next.incrementNodeCount(1); //TODO: increment only if tree does not already contain that key
+            next.incrementNodeCount(1);
             last = next;
             next = kCmp < 0 ? next.getRightChild() : next.getLeftChild();
         } while (kCmp != 0 && next != NODE_DNE);
@@ -43,7 +43,7 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
      */
     @Override
     protected Node delete(K key) {
-        Node repl, curr = search(key, true); //TODO: decrement only if node will be fully deleted
+        Node repl, curr = search(key, true);
         Color oc = curr.getColor();
         if (curr.valCount() > 1 || curr == NODE_DNE) return curr;
 
@@ -51,37 +51,27 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
             repl = NODE_DNE;
             repl.setParentNode(curr.getParent()); // temporarily set NODE_DNE's parent to enable traversing during balancing
             supplant(curr, NODE_DNE);
-            System.out.println("1");
         } else if (curr.childCount() == 1) {
             repl = curr.getRightChild() == NODE_DNE ? curr.getLeftChild() : curr.getRightChild();
             supplant(curr, repl);
-            System.out.println("2");
         } else {
             Node scr = localMin(curr.getRightChild()); // can also be localMax(n.getLeftChild)
             oc = scr.getColor();
             repl = scr.getRightChild();
+            if (repl == NODE_DNE) repl.setParentNode(scr);
 
             if (scr.getParent() != curr) {
                 supplant(scr, scr.getRightChild());
-                curr.getRightChild().setParentNode(scr); //
+                curr.getRightChild().setParentNode(scr);
                 scr.setRightChild(curr.getRightChild());
-                repl.setParentNode(scr.getParent());
-                System.out.println("Case 1");
-            } else {
-                System.out.println("Case 2");
-                repl.setParentNode(scr);
+                repl.setParentNode(scr.getParent()); // in case repl is NODE_DNE and it's parent was not set by supplant
             }
 
             scr.setNodeCount(curr.getNodeCount() - 1);
             supplant(curr, scr);
-
             scr.setColor(curr.getColor());
             curr.getLeftChild().setParentNode(scr);
             scr.setLeftChild(curr.getLeftChild());
-
-            //if (repl == NODE_DNE) repl.setParentNode(scr);
-            System.out.println(repl.getParent() == scr);
-            System.out.println("3");
         }
 
         if (oc == Color.BLACK) balanceDeletion(repl);
@@ -96,10 +86,7 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
     private void balanceDeletion(Node in) {
         Node curr = in;
         while (curr != root && curr.getColor() == Color.BLACK) {
-            System.out.println("cur DNE: " + (curr == NODE_DNE));
-            System.out.println("cur parent: " + (curr.getParent()));
             Node sib = curr.isLeftChild() ? curr.getParent().getRightChild() :  curr.getParent().getLeftChild();
-
 
             if (sib.getColor() == Color.RED) { // Case 1: n's sibling, sib, is red
                 sib.setColor(Color.BLACK);
@@ -109,13 +96,10 @@ class RedBlackBST<T, K extends Comparable> extends BST<T, K> {
                 sib = curr.isLeftChild() ? curr.getParent().getRightChild() :  curr.getParent().getLeftChild();
             }
 
-            System.out.println("sib null child: " + (sib.getLeftChild() == NODE_DNE || sib.getRightChild() == NODE_DNE));
-            System.out.println("sib dne: " + (sib == NODE_DNE));
             // Case 2: n's sibling, sib, is black and sib has two black children
             if (sib.getLeftChild().getColor() == Color.BLACK && sib.getRightChild().getColor() == Color.BLACK) {
                 sib.setColor(Color.RED);
                 curr = curr.getParent();
-                System.out.println("curr == root" + (curr == root));
             } else if (curr.isLeftChild()) {
                 if (sib.getRightChild().getColor() == Color.BLACK) { // Case 3: n's sibling, sib, is black and sib has a red left child
                     sib.getLeftChild().setColor(Color.BLACK);

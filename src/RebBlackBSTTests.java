@@ -7,8 +7,6 @@ import org.junit.Test;
 import util.ListUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,7 +42,6 @@ public class RebBlackBSTTests {
     public void testRemove() {
         TestRedBlackBST<Integer, Integer> testBST = new TestRedBlackBST<>();
         List<Integer> elements = ListUtils.genIntList(1000, 1000);
-        System.out.println(elements.toString());
         for (int i = 0; i < elements.size(); i++) {
             testBST.put(elements.get(i), elements.get(i));
         }
@@ -53,12 +50,6 @@ public class RebBlackBSTTests {
             Assert.assertEquals(rmvd, Integer.valueOf(x));
             Assert.assertTrue(testBST.isValidRBST());
         }
-    }
-
-    private List<Integer> intArrayToList(int[] arr) {
-        ArrayList<Integer> list = new ArrayList<>();
-        for (int x : arr) list.add(x);
-        return list;
     }
 
     static class TestRedBlackBST<T, K extends Comparable> extends RedBlackBST<T, K> {

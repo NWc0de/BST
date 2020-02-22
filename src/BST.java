@@ -251,7 +251,7 @@ class BST<T, K extends Comparable> {
     private Node select(int n, Node next) {
         int lSize = next.getLeftChild().getNodeCount();
         if (n < lSize) return select(n, next.getLeftChild());
-        else if (n > lSize + next.valCount()) return select(n - lSize - next.valCount() - 1, next.getRightChild());
+        else if (n > lSize + next.valCount() - 1) return select(n - lSize - next.valCount(), next.getRightChild());
         else return next;
     }
 
